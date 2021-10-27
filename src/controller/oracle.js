@@ -1,13 +1,13 @@
 const oracledb = require('oracledb');
-const obj_config__oracle = require('../config/oracle');
+const obj__oracle_config = require('../config/oracle');
 
 
-const obj_controller__oracle = {
-  name__context_object: 'obj_controller__oracle',
+module.exports = {
+  name__context_object: 'obj__oracle_controller',
 
   fn_oper__in_advance: async function () {
     try {
-      await oracledb.createPool(obj_config__oracle);
+      await oracledb.createPool(obj__oracle_config);
       this.conn = await this.oracledb.getConnection();
     } catch (err) {
       const name__fn = 'fn_oper__in_advance';
@@ -20,7 +20,7 @@ const obj_controller__oracle = {
     try {
       const name__t_logging = 't_logging__intergrated_node';
 
-      const q = `INSERT INTO ${name__t_logging} VALUES (:1, :2, :3, SYSDATE)`;
+      const q = `INSERT INTO ${name__t_logging} VALUES (:1, :2, :3, :4 SYSDATE)`;
       const arr_bind_params = [_obj.val__min, _obj.val__max, _obj.val__avg];
       const obj_options = {
         autoCommit: true,
@@ -58,5 +58,3 @@ const obj_controller__oracle = {
     }
   }
 };
-
-module.exports = obj_controller__oracle;
