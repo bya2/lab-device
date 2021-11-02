@@ -1,8 +1,17 @@
+# Modules
 node_modules/
+
+# Environment variable files
 .env
-package-lock*.json
+
+# Log
 *.log
+
+# Test files
 test*.js
 
 # Arduino
 .vscode/
+
+# ETC
+package-lock*.json
