@@ -17,3 +17,5 @@ RUN npm i --production
 
 COPY --chown=labdevice:labdevice . .
 
+ENTRYPOINT [ "node", "index.js" ]
+

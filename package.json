@@ -4,16 +4,36 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:dev": "node test",
+    "test:prod": "cross-env NODE_ENV=production node test"
   },
-  "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bya2/lab-device"
+  },
+  "keywords": [
+    "lab",
+    "device",
+    "sensor",
+    "arduino",
+    "serialport"
+  ],
+  "author": "Jinhyeong Lee <byaa1972@gmail.com>",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bya2/lab-device/issues"
+  },
+  "hompage": "https://github.com/bya2/lab-device",
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^27.3.1",
+    "pm2": "^5.1.2"
+  },
   "dependencies": {
+    "app-root-path": "^3.0.0",
+    "dotenv": "^10.0.0",
     "oracledb": "^5.3.0",
     "serialport": "^9.2.4"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.14"
   }
 }

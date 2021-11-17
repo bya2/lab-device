@@ -1,9 +1,13 @@
+# Git
 .git
 .gitignore
 
+# Modules
 node_modules/
 
+# Markdown
 *.md
 
+# Docker
 Dockerfile
 docker-compose.yml
