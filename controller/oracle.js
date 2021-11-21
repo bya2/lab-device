@@ -1,6 +1,8 @@
 "use strict";
 
+const process = require('process');
 const oracledb = require('oracledb');
+
 const oracleConfig = require('../config/oracle');
 
 const oracleCtrl = {

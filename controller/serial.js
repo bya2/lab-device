@@ -5,61 +5,73 @@ const Readline = require('@serialport/parser-readline');
 
 const oracleCtrl = require('./oracle');
 
-const SECTION = process.env.DB_TABLE_SECTION;
-const SENSOR = process.env.DB_TABLE_SENSOR;
-
-if (!SECTION || !SENSOR) {
-  process.exit(1);
-}
-
 const serialCtrl = {
-  fnGetArduinoPort: async function()
+  fnFindSerialPort: async function()
   {
     if (process.argv[2]) {
-      return process.argv[2];
-    }
-
-    const arrPorts = await SerialPort.list();
-    for (const port of arrPorts) {
-      if (/arduino/i.test(port.manufacturer)) {
-        this.path = port.path;
-        return;
-      }
-    }
-    throw new Error('No arduino found.');
-  },
-  fnHandleStream: async function()
-  {
-    if (!this.path) {
+      this.spPath = process.argv[2];
       return;
     }
 
-    const portOpts = {
-      baudRate: 9600,
-    };
+    const arrPorts = await SerialPort.list();
 
-    const currPort = new SerialPort(this.path, portOpts);
-
-    currPort.on('error', fnHandleErrorInPort);
-    currPort.on('open', fnControlStreamInPort);
-
-    function fnHandleErrorInPort(err)
-    {
-      if (err) {
-        console.error(`Error:\n${__filename}`);
-        process.exit(1);
+    for (const port of arrPorts) {
+      if (/arduino/i.test(port.manufacturer)) {
+        this.spPath = port.path;
+        return;
       }
     }
 
-    function fnControlStreamInPort()
-    {
-      const parser = currPort.pipe(new Readline({ delimiter: '\r\n' }));
-      const arrStreamData = [];
-      parser.on('data', val => { arrStreamData = [...arrStreamData, val] });
+    throw new Error('No arduino found.');
+  },
+  fnHandleSerialPort: async function(secId, sensorId)
+  {
+    const spPath = this.spPath;
 
-      setInterval(() => {
-        if (arrStreamData !== 0) {
-          const objValueTable = arr => {
+    if (!spPath) {
+      process.exit(0);
+    }
+
+    const spOpts = {
+      baudRate: 9600
+    };
+
+    const sp = new SerialPort(spPath, spOpts);
+
+    sp.on('error', fnHandleError);
+    sp.on('open', fnHandleStream);
+
+    function fnHandleError()
+    {
+      console.error(`error:\n${__filename}`);
+      process.exit(1);
+    }
+
+    function fnHandleStream()
+    {
+      const spParser = sp.pipe(new Readline({ delimiter: '\r\n' }));
+
+      const arrStream = [];
+
+      // 데이터의 형태가 문자열로 '80 90 100 89 79 38 47'와 같은 형태로 한 줄씩 들어온다고 가정.
+      // 데이터를 배열의 형태로 만들고, 2차원의 형태로 추가.
+      // 2차원 배열을 수직으로 연산하여 필요한 값을 추출.
+      spParser.on('data', strData => {
+        arrStream = [...arrStream, strData.split(' ')];
+      });
+
+      setInterval(fnDMLInsertAtIntervals, 3000);
+
+      async function fnDMLInsertAtIntervals()
+      {
+        if (arrStream !== 0) {
+          const objValueTable = nArr => { /* Return: Array */ /* Object in Array */
+            for (let i=0; i<nArr.length; ++i) {
+              for (let j=0; j<nArr.length; ++j) {
+                
+              }
+            }
+
             return {
               min: Math.min(arr),
               max: Math.max(arr),
@@ -67,11 +79,11 @@ const serialCtrl = {
               len: arr.length,
             };
           };
-          await oracleCtrl.fnDMLInsert(SECTION, objValueTable(arrStreamData));
+          await oracleCtrl.fnDMLInsert(secId, objValueTable(arrStreamData));
         }
-      }, 3000);
-    } 
+      }
+    }
   },
-};
+}
 
 module.exports = serialCtrl;

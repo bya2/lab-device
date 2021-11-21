@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:dev": "node test",
-    "test:prod": "cross-env NODE_ENV=production node test"
+    "test:prod": "cross-env NODE_ENV=production node test",
+    "start:dev": "node ."
   },
   "repository": {
     "type": "git",
