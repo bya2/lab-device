@@ -1,16 +1,9 @@
-const path = require('path');
-const appRoot = require('app-root-path');
+const envFile = process.env.NODE_ENV === "production" ? ".env" : "tmp.env";
 
-require('dotenv').config({
-  path: path.resolve(
-    `${appRoot}`,
-    process.env.NODE_ENV === 'production' ? '.env' : '.env.dev'
-  )
-});
+const path = require("path");
+const appRoot = require("app-root-path");
+require("dotenv").config({ path: path.resolve(`${appRoot}`, envFile) });
 
-require('./db');
-require('./app');
+require("./db");
 
-
-
-
+require("./app");
