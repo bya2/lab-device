@@ -2,12 +2,11 @@
 
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
-
-const oracleCtrl = require("./oracle");
+const ctrlOracle = require("./oracle");
 
 const CONST_NUM_OF_SENSORS = 6;
 
-const serialCtrl = {
+const ctrlSerial = {
   fnFindSerialPort: async function () {
     if (process.argv[2]) {
       this.spPath = process.argv[2];
@@ -99,11 +98,11 @@ const serialCtrl = {
             /* Return: Array */ /* Object in Array */
             return arr;
           };
-          await oracleCtrl.fnDMLInsert(secId, objValueTable(nArrStreamSet));
+          await ctrlOracle.fnDMLInsert(secId, objValueTable(nArrStreamSet));
         }
       }
     }
   },
 };
 
-module.exports = serialCtrl;
+module.exports = ctrlSerial;

@@ -14,13 +14,7 @@
     "type": "git",
     "url": "git+https://github.com/bya2/lab-device"
   },
-  "keywords": [
-    "lab",
-    "device",
-    "sensor",
-    "arduino",
-    "serialport"
-  ],
+  "keywords": [],
   "author": "Jinhyeong Lee <byaa1972@gmail.com>",
   "license": "ISC",
   "bugs": {

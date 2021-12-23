@@ -15,3 +15,7 @@ test*.js
 
 # ETC
 package-lock*.json
+
+# Docker
+Dockerfile
+.dockerignore

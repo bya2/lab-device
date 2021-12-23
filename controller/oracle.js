@@ -2,20 +2,19 @@
 
 const process = require("process");
 const oracledb = require("oracledb");
-
-const oracleConfig = require("../config/oracle");
+const { configOracle } = require("../config/oracle");
 
 const CONST_NUM_OF_SENSORS = 6;
 
-const oracleCtrl = {
+const ctrlOracle = {
   fnCreatePool: async function (_config) {
-    this.pool = await oracledb.createPool(_config || oracleConfig);
+    this.pool = await oracledb.createPool(_config || configOracle);
   },
   fnGetConnection: async function () {
     this.conn = await oracledb.getConnection();
   },
   fnOperInAdvance: async function (_config) {
-    if (_config || oracleConfig) {
+    if (_config || configOracle) {
       await this.fnCreatePool(_config);
       await this.fnGetConnection();
     } else {
@@ -62,4 +61,4 @@ const oracleCtrl = {
   },
 };
 
-module.exports = oracleCtrl;
+module.exports = ctrlOracle;
