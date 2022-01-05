@@ -1,13 +1,12 @@
-// 환경 변수 파일
-const envFile = process.env.NODE_ENV === "production" ? ".env" : "tmp.env";
-
-// 모듈
+// 패키지(모듈)
 const process = require("process");
 const path = require("path");
-const appRoot = require("app-root-path");
-require("dotenv").config({ path: path.resolve(`${appRoot}`, envFile) });
 
-// 비즈니스 로직
+// 환경 변수 파일
+const envFile = process.env.NODE_ENV === "production" ? ".env" : "tmp.env";
+require("dotenv").config({ path: path.resolve(__dirname, envFile) });
+
+// 데이터베이스 접근 로직
 const ctrlOracle = require("./controller/oracle");
 const ctrlSerial = require("./controller/serial");
 
@@ -16,19 +15,21 @@ const ctrlSerial = require("./controller/serial");
 const SECTION_ID = process.env.ORACLEDB_TABLE_ALL_SECTION;
 const SECTION_TYPE = process.env.ORACLEDB_TABLE_SECTION_TYPE;
 
-if (!SECTION_ID || !SECTION_TYPE) {
-  console.log(`No section_id and section_type:\n${filename}`);
-  process.exit(0);
-}
+// 컨텍스트
+// if (!SECTION_ID || !SECTION_TYPE) {
+//   console.log(`No Constants:\n${__filename}`);
+//   process.exit(0);
+// }
 
 (async (process) => {
-  // DB 연결이 될 때까지 대기
+  // 데이터베이스 연결 대기
   await ctrlOracle.fnOperInAdvance();
 
   // 기기에서 아두이노 포트를 찾고 해당 포트의 시리얼을 제어
   ctrlSerial.fnHandleSerialPort();
 
+  // 종료 시 데이터베이스 연결 해제
   process
-    .once("SIGTERM", oracleCtrl.fnOperAtTerminatation)
-    .once("SIGINT", oracleCtrl.fnOperAtTerminatation);
+    .once("SIGTERM", ctrlOracle.fnOperAtTerminatation)
+    .once("SIGINT", ctrlOracle.fnOperAtTerminatation);
 })(process);

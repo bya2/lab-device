@@ -1,49 +1,79 @@
 "use strict";
 
+// 패키지(모듈)
 const process = require("process");
 const oracledb = require("oracledb");
-const { configOracle } = require("../config/oracle");
+const configOracle = require("../config/oracle");
 
-const CONST_NUM_OF_SENSORS = 6;
+// 상수
+// 테이블 명, 해당 구역의 환경 타입, 해당 구역의 센서의 수, 해당 구역의 센서 종류
+const CONST__ORACLE_XE__TABLE_NAME =
+  process.env.ORACLE_XE__TABLE_NAME || "GENERAL";
+const CONST__ORACLE_XE__TEST_TABLE_NAME = `TEST_${CONST__ORACLE_XE__TABLE_NAME}`;
+const CONST__SECTION__ENV_TYPE = process.env.SECTION__ENV_TYPE || "TUNNEL";
+const CONST__SECTION__SENSORS_NUM =
+  process.env.CONST__SECTION__SENSORS_NUM || 9;
+const OBJECT__SECTION__ETC_SENSORS_TYPES = {
+  TUNNEL: ["DUST_1", "DUST_2", "DUST_3"],
+  BRIDGE: ["Accelation_X", "Accelation_Y", "Accelation_Z"],
+  RESIDENTIAL_AREA: ["DUST_1", "DUST_2", "DUST_3"],
+  INTERSECTION: ["DUST_1", "DUST_2", "DUST_3"],
+};
+const ARRAY__SECTION__ETC_SENSORS_TYPE =
+  OBJECT__SECTION__ETC_SENSORS_TYPES[CONST__SECTION__ENV_TYPE];
+
+// 컨텍스트
+
+// DML 삽입 쿼리
+let STR_DML_INSERT_QUERY = `INSERT INTO ${CONST__ORACLE_XE__TEST_TABLE_NAME} VALUES (`;
+for (let i = 1; i <= CONST__SECTION__SENSORS_NUM; ++i) {
+  STR_DML_INSERT_QUERY += `:VAL${i},`;
+}
+STR_DML_INSERT_QUERY += "SYSDATE)";
+// TEST_GENERAL:
+// CREATE TABLE (
+//   vibration_1_avg NUMBER, vibration_2_avg NUMBER, vibration_3_avg NUMBER,
+//   sound_1_avg NUMBER, sound_2_avg NUMBER, sound_3_avg NUMBER,
+//   any_1_val NUMBER, any_2_val NUMBER, any_3_val NUMBER,
+//   occured_at DATE
+// );
+// INSERT INTO ${CONST__ORACLE_XE__TEST_TABLE_NAME} VALUES (:AVG1,:AVG2,:AVG3,:AVG4,:AVG5,:AVG6,AVG7,AVG8,AVG9,SYSDATE)
+
+// GENERAL:
+// INSERT INTO ${CONST__} (vibration_1_avg,vibration_2_avg,vibration_3_avg,sound_1_avg,sound_2_avg,sound_3_avg)
+// VALUES (...)
 
 const ctrlOracle = {
-  fnCreatePool: async function (_config) {
-    this.pool = await oracledb.createPool(_config || configOracle);
+  STR_DML_INSERT_QUERY: STR_DML_INSERT_QUERY,
+
+  fnCreatePool: async function () {
+    this.pool = await oracledb.createPool(configOracle);
   },
   fnGetConnection: async function () {
     this.conn = await oracledb.getConnection();
   },
-  fnOperInAdvance: async function (_config) {
-    if (_config || configOracle) {
-      await this.fnCreatePool(_config);
+  fnOperInAdvance: async function () {
+    try {
+      await this.fnCreatePool();
       await this.fnGetConnection();
-    } else {
-      console.error(`Error:\n${__filename}`);
+    } catch (err) {
+      console.error(`Error:\n${__filename}.fnOperInAdvance:\n${err}`);
       process.exit(1);
     }
   },
-  fnDMLInsert: async function (_sec, _arrObj) {
-    // 섹터(_sec)의 수에 따라 유동적으로 INSERT를 할 수 있도록 쿼리 작성.
-    // 테이블 컬럼의 변경에도 무난하게 작동.
-
-    // 현재 AVG(평균)값만 데이터베이스 테이블에 INSERT.
-
-    let q; // INSERT INTO ${_sec} VALUES (:AVG1,:AVG2,:AVG3,:AVG4,:AVG5,:AVG6)
-    const bindParams = [];
+  fnDMLInsert: async function (_arrObj) {
+    let bindParams = [];
     const qOpts = {
       autoCommit: true,
       bindDefs: {},
     };
 
-    q = `INSERT INTO ${_sec} VALUES (`;
-    for (let i = 0; i < CONST_NUM_OF_SENSORS; ++i) {
-      q += `:AVG${i},`;
+    for (let i = 0; i < CONST__SECTION__SENSORS_NUM; ++i) {
       bindParams = [...bindParams, _arrObj[i].avg];
-      qOpts.bindDefs[`AVG${i}`] = { type: oracledb.DB_TYPE_NUMBER };
+      qOpts.bindDefs[`VAL${i}`] = { type: oracledb.DB_TYPE_NUMBER };
     }
-    q += "SYSDATE)";
 
-    await this.conn.execute(q, bindParams, qOpts);
+    await this.conn.execute(this.STR_DML_INSERT_QUERY, bindParams, qOpts);
   },
   fnCloseConnection: async function () {
     if (this.conn) {
