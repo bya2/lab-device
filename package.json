@@ -1,5 +1,5 @@
 {
-  "name": "D3-Lab-device",
+  "name": "BigDa-Lab-device",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,27 +7,29 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:dev": "node test",
     "test:prod": "cross-env NODE_ENV=production node test",
-    "start": "cross-env NODE_ENV=production node .",
-    "start:dev": "node ."
+    "start": "node ./dist/index.js",
+    "start:dev": "node ./dist/main.js",
+    "build": "webpack --mode=production",
+    "build:dev": "webpack --mode=development"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bya2/lab-device"
+    "url": "git+https://github.com/bigda/lab-device"
   },
   "keywords": [],
-  "author": "Jinhyeong Lee <byaa1972@gmail.com>",
+  "author": "BIGDA",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/bya2/lab-device/issues"
+    "url": "https://github.com/bigda/lab-device/issues"
   },
-  "hompage": "https://github.com/bya2/lab-device",
+  "hompage": "https://github.com/bigda/lab-device",
   "devDependencies": {
-    "cross-env": "^7.0.3",
-    "jest": "^27.3.1",
-    "pm2": "^5.1.2"
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.7.3",
+    "webpack-node-externals": "^3.0.0"
   },
   "dependencies": {
-    "app-root-path": "^3.0.0",
     "dotenv": "^10.0.0",
     "oracledb": "^5.3.0",
     "serialport": "^9.2.4"

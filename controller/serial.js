@@ -1,133 +1,92 @@
-"use strict";
-
 const process = require("process");
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
-const ctrlOracle = require("./oracle");
+const fn_dml_insert__general = require("./db").fn_dml_insert__general;
 
-const CONST__SECTION__SENSORS_NUM = process.env.SECTION__SENSORS_NUM || 9;
-const CONST__DML_INSERT__INTERVAL = process.env.DML_INSERT__INTERVAL || 3000;
+const NUM_COLUMNS = 6 + process.env.ENV_SENSOR_TYPES.split(",").length;
+const NUM_INTERVAL = 3000;
+const NUM_STOP_INTERVAL = 1000 * 20;
 
-const ctrlSerial = {
-  fnFindSerialPort: async function () {
+module.exports = {
+  async fn_search__serial_port() {
     if (process.argv[2]) {
-      this.spPath = process.argv[2];
+      this.path__serial_port = process.argv[2];
       return;
     }
 
-    const arrPorts = await SerialPort.list();
-
-    for (const port of arrPorts) {
+    const arr_ports = await SerialPort.list();
+    for (const p of arr_ports) {
       if (/arduino/i.test(port.manufacturer)) {
-        this.spPath = port.path;
+        this.path__serial_port = p.path;
         return;
       }
     }
 
     throw new Error(
-      `Error: No arduino found\n${__filename}.ctrlSerial.fnFindSerialPort`
+      `Error: ${__filename} - fn_search__serial_port (No arduino)`
     );
   },
-  fnHandleSerialPort: async function () {
-    await this.fnFindSerialPort();
-    if (!this.spPath) {
-      process.exit(0);
-    }
-    const spPath = this.spPath;
-    console.log(spPath);
-    const spOpts = { baudRate: 115200 };
-    const sp = new SerialPort(spPath, spOpts);
-
-    sp.on("error", (err) => fnHandleError(err));
-    sp.on("open", () => fnHandleStream());
-
-    function fnHandleError(err) {
-      console.error(
-        `Error: Serialport open error\n${__filename}.fnHandleSerialPort:\n${err}`
-      );
+  async fn_handler__serial_port() {
+    await this.fn_search__serial_port();
+    if (!this.path__serial_port) {
+      console.error("No serial port.");
       process.exit(1);
     }
 
-    function fnHandleStream() {
-      const spParser = sp.pipe(new Readline({ delimiter: "\r\n" }));
+    const sp_path = this.path__serial_port;
+    const sp_options = { baudRate: 115200 };
+    const sp = new SerialPort(sp_path, sp_options);
 
-      // 데이터의 형태가 문자열로 '80 90 100 89 79 38 47 86 62'와 같은 형태로 한 줄씩 들어온다고 가정.
-      // 데이터를 배열의 형태로 만들고, 2차원의 형태로 추가.
-      // 추가하기 전, 배열의 개수가 센서의 수와 동일한 지 확인.
-      // 2차원 배열을 데이터 테이블로 정의한다면, 하나의 COLUMN의 평균값을 계산.
+    const fn_handler__serial_error = (err) => {
+      console.error(`Error: ${__filename} - fn_handler__serial_port\n${err}`);
+      process.exit(1);
+    };
 
-      // 만약 데이터가 발생하지 않은 센서가 있을 경우, 평균값으로 처리해야할 지, 해당 ROW를 NaN으로 처리해야할 지에 대해서 팀원들과 상의 필요.
-      /*
-       * 아두이노 IDE 실행 결과 데이터가 발생하지 않는 센서가 발생하는 경우가 있음.
-       * 기차와 가까운 특정 센서만 소리를 감지하고 데이터를 발생시키는 것으로 보임.
-       * 데이터가 발생하지 않으면 0을 출력하는 것으로 코드 작성.
-       * 현재 코드는 NaN으로 처리하고 해당 ROW를 삭제.
-       */
-      let nArrStream = [
-        [
-          /* s1 */
-        ],
-        [
-          /* s2 */
-        ],
-        [
-          /* s3 */
-        ],
-        [
-          /* s4 */
-        ],
-        [
-          /* s5 */
-        ],
-        [
-          /* s6 */
-        ],
-        [
-          /* s7 */
-        ],
-        [
-          /* s8 */
-        ],
-        [
-          /* s9 */
-        ],
-      ];
-
-      spParser.on("data", (str) => {
-        let arrStream = str.split(" ");
-        if (arrStream.length !== CONST__SECTION__SENSORS_NUM) return;
-        for (let i = 0; i < CONST__SECTION__SENSORS_NUM; ++i) {
-          nArrStream[i].push(arrStream[i] * 1);
+    const fn_handler__serial_stream = () => {
+      const sp_parser = sp.pipe(new Readline({ delimiter: "\r\n" }));
+      let nested_arr_data = Array(9).fill([]); // 하나의 배열에 빈 배열 9개 생성
+      sp_parser.on("data", (str) => {
+        let arr_data = str.split(" ");
+        if (arr_data.length !== NUM_COLUMNS) return;
+        for (let i = 0; i < NUM_COLUMNS; ++i) {
+          nested_arr_data[i].push(arr_data[i] * 1); // 숫자형으로 변환
         }
       });
+      const fn_dml_insert__at_intervals = async () => {
+        if (nested_arr_data[0].legnth === 0) return;
 
-      setInterval(fnDMLInsertAtIntervals, CONST__DML_INSERT__INTERVAL);
-
-      async function fnDMLInsertAtIntervals() {
-        if (nArrStream[0] === 0) return;
-
-        const objValueTable = () => {
-          let arrOutput = [];
-          for (let i = 0; i < CONST__SECTION__SENSORS_NUM; ++i) {
-            arrOutput = [
-              ...arrOutput,
+        const obj_value_table = () => {
+          let arr_output = [];
+          for (let i = 0; i < NUM_COLUMNS; ++i) {
+            const arr_input_data = nested_arr_data[i];
+            arr_output = [
+              ...arr_output,
               {
-                min: Math.min(...nArrStream[i]),
-                max: Math.max(...nArrStream[i]),
-                avg:
-                  nArrStream[i].reduce((x, y) => x + y) / nArrStream[i].length,
-                len: nArrStream[i].length,
+                min: Math.min(...arr_input_data),
+                max: Math.max(...arr_input_data),
+                avg: arr_input_data.reduce((x, y) => x + y) / arr_input_data,
+                len: arr_input_data.length,
               },
             ];
-            nArrStream[i] = [];
+            nested_arr_data[i] = [];
           }
-
-          return arrOutput;
+          return arr_output;
         };
-        await ctrlOracle.fnDMLInsert(objValueTable());
-      }
-    }
+
+        await fn_dml_insert__general(obj_value_table());
+      };
+
+      const interval_id = setInterval(
+        fn_dml_insert__at_intervals,
+        NUM_INTERVAL
+      );
+
+      setTimeout(() => {
+        clearInterval(interval_id);
+      }, NUM_STOP_INTERVAL);
+    };
+
+    sp.on("error", fn_handler__serial_error);
+    sp.on("open", fn_handler__serial_stream);
   },
 };
-
-module.exports = ctrlSerial;
